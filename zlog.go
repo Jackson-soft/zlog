@@ -12,12 +12,12 @@ import (
 type LogLevel uint8
 
 const (
-	Trace LogLevel = iota
-	Debug
-	Info
-	Warn
-	Error
-	Fatal
+	TraceLevel LogLevel = iota
+	DebugLevel
+	InfoLevel
+	WarnLevel
+	ErrorLevel
+	FatalLevel
 )
 
 const (
@@ -40,23 +40,9 @@ type ZLog struct {
 	buffer      [][]byte // 这里需要一个环形缓冲区
 }
 
-var (
-	Logger *ZLog
-)
-
-func init() {
-	Logger = NewZLog()
-
-	//return Logger
-}
-
-func ZLogInit() {
-	Logger = NewZLog()
-}
-
 func NewZLog() *ZLog {
 	l := new(ZLog)
-	l.level = Info
+	l.level = InfoLevel
 	l.logPath = "zlog"
 	l.maxFileSize = 500
 	l.logIndex = 1
@@ -101,17 +87,17 @@ func (z *ZLog) Close() {
 // logLevelToString
 func (z *ZLog) logLevelToString(level LogLevel) string {
 	switch level {
-	case Trace:
+	case TraceLevel:
 		return "Trace"
-	case Debug:
+	case DebugLevel:
 		return "Debug"
-	case Info:
+	case InfoLevel:
 		return "Info"
-	case Warn:
+	case WarnLevel:
 		return "Warn"
-	case Error:
+	case ErrorLevel:
 		return "Error"
-	case Fatal:
+	case FatalLevel:
 		return "Fatal"
 	default:
 		return "Debug"
@@ -123,19 +109,19 @@ func (z *ZLog) stringToLogLevel(str string) LogLevel {
 	level := strings.ToLower(str)
 	switch level {
 	case "trace":
-		return Trace
+		return TraceLevel
 	case "debug":
-		return Debug
+		return DebugLevel
 	case "info":
-		return Info
+		return InfoLevel
 	case "warn":
-		return Warn
+		return WarnLevel
 	case "error":
-		return Error
+		return ErrorLevel
 	case "fatal":
-		return Fatal
+		return FatalLevel
 	default:
-		return Debug
+		return DebugLevel
 	}
 }
 
@@ -213,7 +199,7 @@ func (z *ZLog) popBuffer() []byte {
 	return *buf
 }
 
-// output 输出
+// Output 输出
 func (z *ZLog) Output(level LogLevel, msg string) {
 	if level >= z.level {
 		logHead := z.prepareLogHead(level)
@@ -221,24 +207,3 @@ func (z *ZLog) Output(level LogLevel, msg string) {
 		z.pushBuffer([]byte(buf))
 	}
 }
-
-/*
-func LogTrace(msg string) {
-	GetInstance().Output(Trace, msg)
-}
-func LogDebug(msg string) {
-	GetInstance().Output(Debug, msg)
-}
-func LogInfo(msg string) {
-	GetInstance().Output(Info, msg)
-}
-func LogWarn(msg string) {
-	GetInstance().Output(Warn, msg)
-}
-func LogError(msg string) {
-	GetInstance().Output(Error, msg)
-}
-func LogFatal(msg string) {
-	GetInstance().Output(Fatal, msg)
-}
-*/
