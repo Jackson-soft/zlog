@@ -1,8 +1,13 @@
 package zlog
 
+import "os"
+
 var std = NewZLog()
 
 func GetInstance() *ZLog {
+	if std == nil {
+		return NewZLog()
+	}
 	return std
 }
 
@@ -21,20 +26,26 @@ func GetLevel() LogLevel {
 }
 
 func LogTrace(msg string) {
-	std.Output(TraceLevel, msg)
+	std.Output(2, TraceLevel, msg)
 }
+
 func LogDebug(msg string) {
-	std.Output(DebugLevel, msg)
+	std.Output(2, DebugLevel, msg)
 }
+
 func LogInfo(msg string) {
-	std.Output(InfoLevel, msg)
+	std.Output(2, InfoLevel, msg)
 }
+
 func LogWarn(msg string) {
-	std.Output(WarnLevel, msg)
+	std.Output(2, WarnLevel, msg)
 }
+
 func LogError(msg string) {
-	std.Output(ErrorLevel, msg)
+	std.Output(2, ErrorLevel, msg)
 }
+
 func LogFatal(msg string) {
-	std.Output(FatalLevel, msg)
+	std.Output(2, FatalLevel, msg)
+	os.Exit(1)
 }
