@@ -2,12 +2,9 @@ package zlog
 
 import "os"
 
-var std = NewZLog()
+var std = NewZLog(InfoLevel, "zlog", 500)
 
 func GetInstance() *ZLog {
-	if std == nil {
-		return NewZLog()
-	}
 	return std
 }
 
@@ -18,11 +15,18 @@ func SetLevel(level LogLevel) {
 	std.mutex.Unlock()
 }
 
-// GetLevel returns the standard logger level.
-func GetLevel() LogLevel {
+//SetMaxFileSize 设置最大文件限制
+func SetMaxFileSize(maxSize int64) {
 	std.mutex.Lock()
-	defer std.mutex.Unlock()
-	return std.GetLevel()
+	std.SetMaxFileSize(maxSize)
+	std.mutex.Unlock()
+}
+
+//SetLogPath 设置日志存放目录
+func SetLogPath(logPath string) {
+	std.mutex.Lock()
+	std.SetLogPath(logPath)
+	std.mutex.Unlock()
 }
 
 func LogTrace(msg string) {

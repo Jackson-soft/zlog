@@ -77,38 +77,25 @@ type ZLog struct {
 	maxFileSize int64  // 日志文件最大大小，单位M
 
 	mutex       sync.Mutex
-	logLocation string   // 文件的名称
-	logIndex    int8     // 文件序号
-	currentDay  string   // 当前日期
-	buffer      [][]byte // 这里需要一个环形缓冲区
+	logLocation string // 文件的名称
+	logIndex    int8   // 文件序号
+	currentDay  string // 当前日期
 }
 
-func NewZLog() *ZLog {
-	l := new(ZLog)
-	l.level = InfoLevel
-	l.logPath = "zlog"
-	l.maxFileSize = 500
-	l.logIndex = 1
-	l.currentDay = time.Now().Format(DayFormat)
-	l.buffer = make([][]byte, 0)
-	if err := l.createDir(l.logPath); err != nil {
-		return nil
-	}
-	if err := l.openFile(); err != nil {
-		return nil
-	}
+func NewZLog(level LogLevel, logPath string, maxSize int64) *ZLog {
+	z := new(ZLog)
+	z.level = level
+	z.logPath = logPath
+	z.maxFileSize = maxSize
+	z.logIndex = 1
+	z.currentDay = time.Now().Format(DayFormat)
 
-	return l
+	return z
 }
 
 // SetLevel 设置日志级别
 func (z *ZLog) SetLevel(level LogLevel) {
 	z.level = level
-}
-
-// GetLevel 获取日志级别
-func (z *ZLog) GetLevel() LogLevel {
-	return z.level
 }
 
 //SetMaxFileSize 设置最大文件限制
@@ -117,12 +104,21 @@ func (z *ZLog) SetMaxFileSize(maxSize int64) {
 }
 
 //SetLogPath 设置日志存放目录
-func (z *ZLog) SetLogPath(logPath string) {
+func (z *ZLog) SetLogPath(logPath string) error {
 	z.logPath = logPath
+	if err := z.createDir(z.logPath); err != nil {
+		return err
+	}
+	if err := z.openFile(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Output 输出
 func (z *ZLog) Output(calldepth int, level LogLevel, msg string) error {
+	z.mutex.Lock()
+	defer z.mutex.Unlock()
 	if level >= z.level && z.checkFile() {
 		pc, file, line, ok := runtime.Caller(calldepth)
 		if !ok {
@@ -171,12 +167,23 @@ func (z *ZLog) checkFile() bool {
 	if err != nil {
 		return false
 	}
-	cDay := time.Now().Format(DayFormat)
+
+	bChang := false
 	// 文件超过大小或日期不是同一天
-	if fileSize >= z.maxFileSize*1024*1024 || cDay != z.currentDay {
+	if fileSize >= z.maxFileSize*1024*1024 {
 		z.logIndex++
+		bChang = true
+	}
+
+	cDay := time.Now().Format(DayFormat)
+	if cDay != z.currentDay {
 		z.currentDay = cDay
-		z.openFile()
+		bChang = true
+	}
+	if bChang {
+		if err = z.openFile(); err != nil {
+			return false
+		}
 	}
 	return true
 }
