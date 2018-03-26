@@ -2,17 +2,22 @@ package zlog
 
 import "os"
 
-var std = NewZLog(InfoLevel, "zlog", 500)
+var std = NewZLog(InfoLevel)
 
 func GetInstance() *ZLog {
 	return std
 }
 
 // SetLevel sets the standard logger level.
-func SetLevel(level LogLevel) {
+func SetLevel(lvl string) error {
 	std.mutex.Lock()
+	level, err := ParseLevel(lvl)
+	if err != nil {
+		return err
+	}
 	std.SetLevel(level)
 	std.mutex.Unlock()
+	return nil
 }
 
 //SetMaxFileSize 设置最大文件限制

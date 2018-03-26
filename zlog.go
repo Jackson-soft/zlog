@@ -26,6 +26,12 @@ const (
 	DayFormat  = "20060102"
 )
 
+var (
+	defaultLogPath = "zlog"
+	defaultMaxSize = int64(500) // 500M
+	defaultIndex   = 1
+)
+
 // Convert the Level to a string. E.g. PanicLevel becomes "panic".
 func (level LogLevel) String() string {
 	switch level {
@@ -78,17 +84,24 @@ type ZLog struct {
 
 	mutex       sync.Mutex
 	logLocation string // 文件的名称
-	logIndex    int8   // 文件序号
+	logIndex    int    // 文件序号
 	currentDay  string // 当前日期
+	logChang    bool   //日志文件是否要切割
 }
 
-func NewZLog(level LogLevel, logPath string, maxSize int64) *ZLog {
+//NewZLog 创建日志
+func NewZLog(level LogLevel) *ZLog {
 	z := new(ZLog)
+
 	z.level = level
-	z.logPath = logPath
-	z.maxFileSize = maxSize
-	z.logIndex = 1
+
+	z.logPath = defaultLogPath
+	z.maxFileSize = defaultMaxSize
+	z.logIndex = defaultIndex
 	z.currentDay = time.Now().Format(DayFormat)
+	z.logChang = true
+
+	z.out = nil
 
 	return z
 }
@@ -104,15 +117,9 @@ func (z *ZLog) SetMaxFileSize(maxSize int64) {
 }
 
 //SetLogPath 设置日志存放目录
-func (z *ZLog) SetLogPath(logPath string) error {
+func (z *ZLog) SetLogPath(logPath string) {
 	z.logPath = logPath
-	if err := z.createDir(z.logPath); err != nil {
-		return err
-	}
-	if err := z.openFile(); err != nil {
-		return err
-	}
-	return nil
+	z.logChang = true
 }
 
 // Output 输出
@@ -143,22 +150,22 @@ func (z *ZLog) Output(calldepth int, level LogLevel, msg string) error {
 	return nil
 }
 
-// createDir
-func (z *ZLog) createDir(logPath string) error {
-	if _, err := os.Stat(logPath); os.IsNotExist(err) {
-		if err := os.Mkdir(logPath, os.ModeDir|os.ModePerm); err != nil {
+// openFile
+func (z *ZLog) openFile() error {
+	if _, err := os.Stat(z.logPath); os.IsNotExist(err) {
+		if err := os.Mkdir(z.logPath, os.ModeDir|os.ModePerm); err != nil {
 			return err
 		}
 	}
-	return nil
-}
 
-// openFile
-func (z *ZLog) openFile() error {
 	z.logLocation = fmt.Sprintf("%s/zlog-%s-%.4d.log", z.logPath, z.currentDay, z.logIndex)
 	var err error
 	z.out, err = os.OpenFile(z.logLocation, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
-	return err
+	if err != nil {
+		return err
+	}
+	z.logChang = false
+	return nil
 }
 
 // checkFile 用来检测日志文件是否超过规定大小
@@ -190,6 +197,11 @@ func (z *ZLog) checkFile() bool {
 
 // getLogBlockSize 检查日志文件大小
 func (z *ZLog) getLogBlockSize() (int64, error) {
+	if z.logChang {
+		if err := z.openFile(); err != nil {
+			return 0, err
+		}
+	}
 	fileInfo, err := os.Stat(z.logLocation)
 	if err != nil {
 		return 0, err
