@@ -73,13 +73,14 @@ func ParseLevel(lvl string) (LogLevel, error) {
 	return l, fmt.Errorf("not a valid logrus Level: %q", lvl)
 }
 
-// 日志格式 2006-01-02 15:04:05 info test.go 245 function : this is a error
+// 日志格式 [error] 2006-01-02 15:04:05  test.go 245 function : this is a error
 
 // ZLog is a log
 type ZLog struct {
 	level       LogLevel
 	out         io.Writer
 	logPath     string // 文件存放目录
+	logLink     string // 文件软链接
 	maxFileSize int64  // 日志文件最大大小，单位M
 
 	mutex       sync.Mutex
@@ -122,6 +123,12 @@ func (z *ZLog) SetLogPath(logPath string) {
 	z.logChang = true
 }
 
+//SetLogLink
+func (z *ZLog) SetLogLink(logLink string) {
+	z.logLink = logLink
+	z.logChang = true
+}
+
 // Output 输出
 func (z *ZLog) Output(calldepth int, level LogLevel, msg string) error {
 	z.mutex.Lock()
@@ -158,11 +165,18 @@ func (z *ZLog) openFile() error {
 		}
 	}
 
-	z.logLocation = fmt.Sprintf("%s/zlog-%s-%.4d.log", z.logPath, z.currentDay, z.logIndex)
+	fileName := fmt.Sprintf("zlog-%s-%.4d.log", z.currentDay, z.logIndex)
+	z.logLocation = z.logPath + "/" + fileName
 	var err error
 	z.out, err = os.OpenFile(z.logLocation, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		return err
+	}
+
+	if z.logLink != "" {
+		if err = os.Symlink(fileName, z.logPath+"/"+z.logLink); err != nil {
+			return err
+		}
 	}
 	z.logChang = false
 	return nil

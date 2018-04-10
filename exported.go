@@ -34,6 +34,13 @@ func SetLogPath(logPath string) {
 	std.mutex.Unlock()
 }
 
+//SetLogLink 设置日志软链接
+func SetLogLink(logLink string) {
+	std.mutex.Lock()
+	std.SetLogLink(logLink)
+	std.mutex.Unlock()
+}
+
 func LogTrace(msg string) {
 	std.Output(2, TraceLevel, msg)
 }
