@@ -150,8 +150,7 @@ func (z *ZLog) Output(calldepth int, level LogLevel, msg string) error {
 			}
 		}
 		file = short
-		logHead := fmt.Sprintf("[%s] %s %s %s %d", level.String(), time.Now().Format(TimeFormat), file, fn.Name(), line)
-		buf := fmt.Sprintf("%s : %v \n", logHead, msg)
+		buf := fmt.Sprintf("%s [%s] %s %s %d : %s \n", time.Now().Format(TimeFormat), level.String(), file, fn.Name(), line, msg)
 
 		_, err := z.out.Write([]byte(buf))
 		return err
@@ -170,13 +169,19 @@ func (z *ZLog) openFile() error {
 	fileName := fmt.Sprintf("zlog-%s-%.4d.log", z.currentDay, z.logIndex)
 	z.logLocation = z.logPath + "/" + fileName
 	var err error
-	z.out, err = os.OpenFile(z.logLocation, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	z.out, err = os.OpenFile(z.logLocation, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
 
 	if z.logLink != "" {
-		if err = os.Symlink(fileName, z.logPath+"/"+z.logLink); err != nil {
+		linkName := z.logPath + "/" + z.logLink
+		tmpLinkName := linkName + `_symlink`
+		if err := os.Symlink(fileName, tmpLinkName); err != nil {
+			return err
+		}
+
+		if err := os.Rename(tmpLinkName, linkName); err != nil {
 			return err
 		}
 	}
