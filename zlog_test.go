@@ -14,6 +14,7 @@ func TestNewZLog(t *testing.T) {
 
 func TestZLogLink(t *testing.T) {
 	z := NewZLog(InfoLevel)
+	z.SetLogPath("xlog")
 	z.SetLogLink("xlog.log")
 	z.Output(2, ErrorLevel, "fdsfasd")
 	d, err := ioutil.ReadFile("xlog.log")
@@ -25,6 +26,7 @@ func TestZLogLink(t *testing.T) {
 
 func TestZLog(t *testing.T) {
 	SetLevel("info")
+	SetLogPath("xlog")
 	SetLogLink("xx.log")
 	LogError("dfasdf")
 }

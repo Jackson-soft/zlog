@@ -27,7 +27,8 @@ const (
 )
 
 var (
-	defaultLogPath = "zlog"
+	defaultPath    = "zlog"
+	defaultLink    = ""
 	defaultMaxSize = int64(500) // 500M
 	defaultIndex   = 1
 )
@@ -96,7 +97,8 @@ func NewZLog(level LogLevel) *ZLog {
 
 	z.level = level
 
-	z.logPath = defaultLogPath
+	z.logPath = defaultPath
+	z.logLink = defaultLink
 	z.maxFileSize = defaultMaxSize
 	z.logIndex = defaultIndex
 	z.currentDay = time.Now().Format(DayFormat)
@@ -201,6 +203,7 @@ func (z *ZLog) checkFile() bool {
 		z.currentDay = cDay
 		bChang = true
 	}
+
 	if bChang {
 		if err = z.openFile(); err != nil {
 			return false
