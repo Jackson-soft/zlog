@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
 	"time"
 )
 
+//LogLevel 日志等级
 type LogLevel uint32
 
 const (
@@ -22,14 +24,14 @@ const (
 )
 
 const (
-	TimeFormat = "2006-01-02 15:04:05"
-	DayFormat  = "20060102"
+	timeFormat = "2006-01-02 15:04:05"
+	dayFormat  = "20060102"
 )
 
 var (
 	defaultPath    = "zlog"
 	defaultLink    = ""
-	defaultMaxSize = int64(500) // 500M
+	defaultMaxSize = int64(500 * 1024 * 1024) // 500M
 	defaultIndex   = 1
 )
 
@@ -101,7 +103,7 @@ func NewZLog(level LogLevel) *ZLog {
 	z.logLink = defaultLink
 	z.maxFileSize = defaultMaxSize
 	z.logIndex = defaultIndex
-	z.currentDay = time.Now().Format(DayFormat)
+	z.currentDay = time.Now().Format(dayFormat)
 	z.logChang = true
 
 	z.out = nil
@@ -114,9 +116,9 @@ func (z *ZLog) SetLevel(level LogLevel) {
 	z.level = level
 }
 
-//SetMaxFileSize 设置最大文件限制
+//SetMaxFileSize 设置最大文件限制,参数单位是M
 func (z *ZLog) SetMaxFileSize(maxSize int64) {
-	z.maxFileSize = maxSize
+	z.maxFileSize = maxSize * 1024 * 1024
 }
 
 //SetLogPath 设置日志存放目录
@@ -125,7 +127,7 @@ func (z *ZLog) SetLogPath(logPath string) {
 	z.logChang = true
 }
 
-//SetLogLink
+//SetLogLink 设置最新日志文件的软链接
 func (z *ZLog) SetLogLink(logLink string) {
 	z.logLink = logLink
 	z.logChang = true
@@ -135,22 +137,26 @@ func (z *ZLog) SetLogLink(logLink string) {
 func (z *ZLog) Output(calldepth int, level LogLevel, msg string) error {
 	z.mutex.Lock()
 	defer z.mutex.Unlock()
-	if level >= z.level && z.checkFile() {
+	if level >= z.level {
+		z.checkLogData()
+		z.checkLogSize()
+		if z.logChang {
+			if err := z.openFile(); err != nil {
+				return err
+			}
+		}
 		pc, file, line, ok := runtime.Caller(calldepth)
 		if !ok {
 			file = "???"
 			line = 0
-		}
-		fn := runtime.FuncForPC(pc)
-		short := file
-		for i := len(file) - 1; i > 0; i-- {
-			if file[i] == '/' {
-				short = file[i+1:]
-				break
+		} else {
+			slash := strings.LastIndex(file, "/")
+			if slash >= 0 {
+				file = file[slash+1:]
 			}
 		}
-		file = short
-		buf := fmt.Sprintf("%s [%s] %s %s %d : %s \n", time.Now().Format(TimeFormat), level.String(), file, fn.Name(), line, msg)
+		fn := runtime.FuncForPC(pc)
+		buf := fmt.Sprintf("%s [%s] %s %s %d : %s \n", time.Now().Format(timeFormat), level.String(), file, fn.Name(), line, msg)
 
 		_, err := z.out.Write([]byte(buf))
 		return err
@@ -158,24 +164,25 @@ func (z *ZLog) Output(calldepth int, level LogLevel, msg string) error {
 	return nil
 }
 
-// openFile
+// openFile 打开文件
 func (z *ZLog) openFile() error {
-	if _, err := os.Stat(z.logPath); os.IsNotExist(err) {
-		if err := os.Mkdir(z.logPath, os.ModeDir|os.ModePerm); err != nil {
+	var err error
+	if _, err = os.Stat(z.logPath); os.IsNotExist(err) {
+		if err = os.Mkdir(z.logPath, os.ModeDir|os.ModePerm); err != nil {
 			return err
 		}
 	}
 
 	fileName := fmt.Sprintf("zlog-%s-%.4d.log", z.currentDay, z.logIndex)
-	z.logLocation = z.logPath + "/" + fileName
-	var err error
+	z.logLocation = filepath.Join(z.logPath, fileName)
+
 	z.out, err = os.OpenFile(z.logLocation, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
 
 	if z.logLink != "" {
-		linkName := z.logPath + "/" + z.logLink
+		linkName := filepath.Join(z.logPath, z.logLink)
 		tmpLinkName := linkName + `_symlink`
 		if err := os.Symlink(fileName, tmpLinkName); err != nil {
 			return err
@@ -189,44 +196,24 @@ func (z *ZLog) openFile() error {
 	return nil
 }
 
-// checkFile 用来检测日志文件是否超过规定大小
-func (z *ZLog) checkFile() bool {
-	fileSize, err := z.getLogBlockSize()
-	if err != nil {
-		return false
-	}
-
-	bChang := false
-	// 文件超过大小或日期不是同一天
-	if fileSize >= z.maxFileSize*1024*1024 {
-		z.logIndex++
-		bChang = true
-	}
-
-	cDay := time.Now().Format(DayFormat)
+// checkLogData 检测日期是否与当前日期不一致
+func (z *ZLog) checkLogData() {
+	cDay := time.Now().Format(dayFormat)
 	if cDay != z.currentDay {
 		z.currentDay = cDay
-		bChang = true
+		z.logChang = true
 	}
-
-	if bChang {
-		if err = z.openFile(); err != nil {
-			return false
-		}
-	}
-	return true
 }
 
-// getLogBlockSize 检查日志文件大小
-func (z *ZLog) getLogBlockSize() (int64, error) {
-	if z.logChang {
-		if err := z.openFile(); err != nil {
-			return 0, err
-		}
-	}
+// checkLogSize 用来检测日志文件是否超过规定大小
+func (z *ZLog) checkLogSize() {
 	fileInfo, err := os.Stat(z.logLocation)
 	if err != nil {
-		return 0, err
+		return
 	}
-	return fileInfo.Size(), nil
+
+	if fileInfo.Size() >= z.maxFileSize {
+		z.logIndex++
+		z.logChang = true
+	}
 }
