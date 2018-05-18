@@ -20,48 +20,27 @@ func SetLevel(lvl string) error {
 	return nil
 }
 
-//SetMaxFileSize 设置最大文件限制
-func SetMaxFileSize(maxSize int64) {
-	std.mutex.Lock()
-	std.SetMaxFileSize(maxSize)
-	std.mutex.Unlock()
-}
-
-//SetLogPath 设置日志存放目录
-func SetLogPath(logPath string) {
-	std.mutex.Lock()
-	std.SetLogPath(logPath)
-	std.mutex.Unlock()
-}
-
-//SetLogLink 设置日志软链接
-func SetLogLink(logLink string) {
-	std.mutex.Lock()
-	std.SetLogLink(logLink)
-	std.mutex.Unlock()
-}
-
 func LogTrace(msg string) {
-	std.Output(2, TraceLevel, msg)
+	std.Output(TraceLevel, msg)
 }
 
 func LogDebug(msg string) {
-	std.Output(2, DebugLevel, msg)
+	std.Output(DebugLevel, msg)
 }
 
 func LogInfo(msg string) {
-	std.Output(2, InfoLevel, msg)
+	std.Output(InfoLevel, msg)
 }
 
 func LogWarn(msg string) {
-	std.Output(2, WarnLevel, msg)
+	std.Output(WarnLevel, msg)
 }
 
 func LogError(msg string) {
-	std.Output(2, ErrorLevel, msg)
+	std.Output(ErrorLevel, msg)
 }
 
 func LogFatal(msg string) {
-	std.Output(2, FatalLevel, msg)
+	std.Output(FatalLevel, msg)
 	os.Exit(1)
 }
