@@ -84,7 +84,7 @@ func NewZLog(level LogLevel) *ZLog {
 	z.stop = make(chan bool)
 	z.buffer = make(chan []byte, 256)
 
-	z.backends = append(z.backends, os.Stderr)
+	z.backends = append(z.backends, os.Stdout)
 
 	go z.run()
 
@@ -120,6 +120,11 @@ func (z *ZLog) run() {
 			}
 		case stop := <-z.stop:
 			if stop && len(z.buffer) == 0 {
+				for _, b := range z.backends {
+					b.Close()
+				}
+				close(z.buffer)
+				close(z.stop)
 				return
 			}
 		}
@@ -127,7 +132,7 @@ func (z *ZLog) run() {
 }
 
 // Output 输出
-func (z *ZLog) Output(level LogLevel, msg string) {
+func (z *ZLog) output(level LogLevel, msg string) {
 	z.mutex.Lock()
 	defer z.mutex.Unlock()
 	if level >= z.level {
