@@ -103,6 +103,11 @@ func (z *ZLog) SetFormattor(ft Formatter) {
 
 //SetBackend 设置输出后端
 func (z *ZLog) SetBackend(be Backend) {
+	z.backends = []Backend{be}
+}
+
+//AddBackend 添加多个输出后端
+func (z *ZLog) AddBackend(be Backend) {
 	z.backends = append(z.backends, be)
 }
 

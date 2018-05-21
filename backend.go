@@ -56,6 +56,8 @@ func NewInciseFile(filePath, fileLink, prefix string, maxSize int64) (*InciseFil
 	b.currentDay = time.Now().Format(dayFormat)
 	b.index = defaultIndex
 
+	b.chang = true
+
 	return b, nil
 }
 
