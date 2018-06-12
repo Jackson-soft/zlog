@@ -15,9 +15,9 @@ type Formatter interface {
 //TextFormatter 文本格式化前端
 type TextFormatter struct{}
 
-//Format 日志格式  2006-01-02 15:04:05 [error] test.go 245 function : this is a error
+//Format 日志格式  2006-01-02 15:04:05 [error] test.go 245 : this is a error
 func (f *TextFormatter) Format(level LogLevel, msg string) []byte {
-	pc, file, line, ok := runtime.Caller(3)
+	_, file, line, ok := runtime.Caller(3)
 	if !ok {
 		file = "???"
 		line = 0
@@ -27,7 +27,7 @@ func (f *TextFormatter) Format(level LogLevel, msg string) []byte {
 			file = file[slash+1:]
 		}
 	}
-	fn := runtime.FuncForPC(pc)
-	buf := fmt.Sprintf("%s [%s] %s %s %d : %s \n", time.Now().Format(timeFormat), level.String(), file, fn.Name(), line, msg)
+
+	buf := fmt.Sprintf("%s [%s] %s %d : %s\n", time.Now().Format(timeFormat), level.String(), file, line, msg)
 	return []byte(buf)
 }

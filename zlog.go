@@ -7,7 +7,10 @@ import (
 	"sync"
 )
 
-//LogLevel 日志等级
+// Fields type
+type Fields map[string]interface{}
+
+// LogLevel 日志等级
 type LogLevel uint32
 
 const (
@@ -19,7 +22,7 @@ const (
 	FatalLevel
 )
 
-// Convert the Level to a string. E.g. PanicLevel becomes "panic".
+// Convert the Level to a string
 func (level LogLevel) String() string {
 	switch level {
 	case TraceLevel:
@@ -84,7 +87,7 @@ func NewZLog(level LogLevel) *ZLog {
 	z.stop = make(chan bool)
 	z.buffer = make(chan []byte, 256)
 
-	z.backends = append(z.backends, os.Stdout)
+	z.backends = []Backend{os.Stdout}
 
 	go z.run()
 

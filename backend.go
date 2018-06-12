@@ -1,6 +1,7 @@
 package zlog
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -32,14 +33,15 @@ const (
 	timeFormat = "2006-01-02 15:04:05"
 	dayFormat  = "20060102"
 
-	defaultPath    = ""
-	defaultLink    = ""
-	defaultPrefix  = ""
+	defaultPrefix  = "zlog"
 	defaultMaxSize = int64(500 * 1024 * 1024) // 500M
 	defaultIndex   = 1
 )
 
 func NewInciseFile(filePath, fileLink, prefix string, maxSize int64) (*InciseFileBackend, error) {
+	if filePath == "" {
+		return nil, errors.New("file path is nil")
+	}
 	b := new(InciseFileBackend)
 	var err error
 	if _, err = os.Stat(filePath); os.IsNotExist(err) {
@@ -50,8 +52,18 @@ func NewInciseFile(filePath, fileLink, prefix string, maxSize int64) (*InciseFil
 	b.filePath = filePath
 
 	b.fileLink = fileLink
-	b.namePrefix = prefix
-	b.maxFileSize = maxSize * 1014 * 1024
+
+	if prefix == "" {
+		b.namePrefix = defaultPrefix
+	} else {
+		b.namePrefix = prefix
+	}
+
+	if maxSize == 0 {
+		b.maxFileSize = defaultMaxSize
+	} else {
+		b.maxFileSize = maxSize * 1014 * 1024
+	}
 
 	b.currentDay = time.Now().Format(dayFormat)
 	b.index = defaultIndex
