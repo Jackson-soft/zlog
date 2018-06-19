@@ -7,14 +7,11 @@ import (
 	"sync"
 )
 
-// Fields type
-type Fields map[string]interface{}
-
 // LogLevel 日志等级
-type LogLevel uint32
+type Level uint8
 
 const (
-	TraceLevel LogLevel = iota
+	TraceLevel Level = iota
 	DebugLevel
 	InfoLevel
 	WarnLevel
@@ -23,7 +20,7 @@ const (
 )
 
 // Convert the Level to a string
-func (level LogLevel) String() string {
+func (level Level) String() string {
 	switch level {
 	case TraceLevel:
 		return "trace"
@@ -39,11 +36,11 @@ func (level LogLevel) String() string {
 		return "fatal"
 	}
 
-	return "unknown"
+	return ""
 }
 
 // ParseLevel takes a string level and returns the Logrus log level constant.
-func ParseLevel(lvl string) (LogLevel, error) {
+func ParseLevel(lvl string) (Level, error) {
 	switch strings.ToLower(lvl) {
 	case "trace":
 		return TraceLevel, nil
@@ -59,8 +56,7 @@ func ParseLevel(lvl string) (LogLevel, error) {
 		return DebugLevel, nil
 	}
 
-	var l LogLevel
-	return l, fmt.Errorf("not a valid logrus Level: %q", lvl)
+	return DebugLevel, fmt.Errorf("not a valid logrus Level: %q", lvl)
 }
 
 // ZLog is a log
@@ -69,7 +65,7 @@ type ZLog struct {
 
 	formatter Formatter
 
-	level  LogLevel
+	level  Level
 	buffer chan []byte
 
 	stop chan bool
@@ -78,7 +74,7 @@ type ZLog struct {
 }
 
 //NewZLog 创建日志
-func NewZLog(level LogLevel) *ZLog {
+func NewZLog(level Level) *ZLog {
 	z := new(ZLog)
 
 	z.formatter = new(TextFormatter)
@@ -95,7 +91,7 @@ func NewZLog(level LogLevel) *ZLog {
 }
 
 // SetLevel 设置日志级别
-func (z *ZLog) SetLevel(level LogLevel) {
+func (z *ZLog) SetLevel(level Level) {
 	z.level = level
 }
 
@@ -140,11 +136,16 @@ func (z *ZLog) run() {
 }
 
 // Output 输出
-func (z *ZLog) output(level LogLevel, msg string) {
+func (z *ZLog) output(level Level, msg string) {
 	z.mutex.Lock()
 	defer z.mutex.Unlock()
 	if level >= z.level {
 		buf := z.formatter.Format(level, msg)
 		z.buffer <- buf
 	}
+}
+
+func (z *ZLog) WithFields(fields Fields) *ZLog {
+	z.formatter.WithFields(fields)
+	return z
 }

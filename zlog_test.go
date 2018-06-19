@@ -19,8 +19,8 @@ func BenchmarkLoops(t *testing.B) {
 	if err != nil {
 		t.Error(err)
 	}
-	//SetBackend(b)
-	z.AddBackend(b)
+	z.SetBackend(b)
+	//z.AddBackend(b)
 	for i := 0; i < t.N; i++ {
 		z.output(WarnLevel, "sdfasdf\n ssfdsdfs \n asdfsd")
 	}

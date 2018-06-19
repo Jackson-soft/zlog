@@ -44,6 +44,10 @@ func SetBackend(be Backend) {
 	std.mutex.Unlock()
 }
 
+func WithFields(fields Fields) *ZLog {
+	return std.WithFields(fields)
+}
+
 // Tracef logs a message at level Info on the standard logger.
 func Tracef(format string, args ...interface{}) {
 	std.output(TraceLevel, fmt.Sprintf(format, args...))
