@@ -45,7 +45,7 @@ func (f *TextFormatter) Format(level Level, msg string) []byte {
 		}
 	}
 
-	fmt.Fprintf(buf, " %s\n", msg)
+	fmt.Fprintf(buf, "%s\n", msg)
 
 	return buf.Bytes()
 }

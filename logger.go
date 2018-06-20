@@ -77,7 +77,9 @@ type ZLog struct {
 func NewZLog(level Level) *ZLog {
 	z := new(ZLog)
 
-	z.formatter = new(TextFormatter)
+	z.formatter = &TextFormatter{
+		Data: make(Fields),
+	}
 
 	z.level = level
 	z.stop = make(chan bool)
@@ -148,4 +150,8 @@ func (z *ZLog) output(level Level, msg string) {
 func (z *ZLog) WithFields(fields Fields) *ZLog {
 	z.formatter.WithFields(fields)
 	return z
+}
+
+func (z *ZLog) Infoln(args ...interface{}) {
+	z.output(InfoLevel, fmt.Sprint(args...))
 }
