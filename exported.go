@@ -1,10 +1,5 @@
 package zlog
 
-import (
-	"fmt"
-	"os"
-)
-
 var std = NewZLog(InfoLevel)
 
 func GetInstance() *ZLog {
@@ -50,57 +45,55 @@ func WithFields(fields Fields) *ZLog {
 
 // Tracef logs a message at level Info on the standard logger.
 func Tracef(format string, args ...interface{}) {
-	std.output(TraceLevel, fmt.Sprintf(format, args...))
+	std.Tracef(format, args...)
 }
 
 // Debugf logs a message at level Debug on the standard logger.
 func Debugf(format string, args ...interface{}) {
-	std.output(DebugLevel, fmt.Sprintf(format, args...))
+	std.Debugf(format, args...)
 }
 
 // Infof logs a message at level Info on the standard logger.
 func Infof(format string, args ...interface{}) {
-	std.output(InfoLevel, fmt.Sprintf(format, args...))
+	std.Infof(format, args...)
 }
 
 // Warnf logs a message at level Warn on the standard logger.
 func Warnf(format string, args ...interface{}) {
-	std.output(WarnLevel, fmt.Sprintf(format, args...))
+	std.Warnf(format, args...)
 }
 
 // Errorf logs a message at level Error on the standard logger.
 func Errorf(format string, args ...interface{}) {
-	std.output(ErrorLevel, fmt.Sprintf(format, args...))
+	std.Errorf(format, args...)
 }
 
 // Fatalf logs a message at level Fatal on the standard logger.
 func Fatalf(format string, args ...interface{}) {
-	std.output(FatalLevel, fmt.Sprintf(format, args...))
-	os.Exit(1)
+	std.Fatalf(format, args...)
 }
 
 // Debugln logs a message at level Debug on the standard logger.
 func Debugln(args ...interface{}) {
-	std.output(DebugLevel, fmt.Sprint(args...))
+	std.Debugln(args...)
 }
 
 // Infoln logs a message at level Info on the standard logger.
 func Infoln(args ...interface{}) {
-	std.output(InfoLevel, fmt.Sprint(args...))
+	std.Infoln(args...)
 }
 
 // Warnln logs a message at level Warn on the standard logger.
 func Warnln(args ...interface{}) {
-	std.output(WarnLevel, fmt.Sprint(args...))
+	std.Warnln(args...)
 }
 
 // Errorln logs a message at level Error on the standard logger.
 func Errorln(args ...interface{}) {
-	std.output(ErrorLevel, fmt.Sprint(args...))
+	std.Errorln(args...)
 }
 
 // Fatalln logs a message at level Fatal on the standard logger.
 func Fatalln(args ...interface{}) {
-	std.output(FatalLevel, fmt.Sprint(args...))
-	os.Exit(1)
+	std.Fatalln(args...)
 }
