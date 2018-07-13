@@ -36,6 +36,8 @@ const (
 	defaultPrefix  = "zlog"
 	defaultMaxSize = int64(500 * 1024 * 1024) // 500M
 	defaultIndex   = 1
+
+	defaultSuffix = ".log"
 )
 
 func NewInciseFile(filePath, fileLink, prefix string, maxSize int64) (*InciseFileBackend, error) {
@@ -43,15 +45,19 @@ func NewInciseFile(filePath, fileLink, prefix string, maxSize int64) (*InciseFil
 		return nil, errors.New("file path is nil")
 	}
 	b := new(InciseFileBackend)
+
 	var err error
 	if _, err = os.Stat(filePath); os.IsNotExist(err) {
 		if err = os.Mkdir(filePath, os.ModeDir|os.ModePerm); err != nil {
 			return nil, err
 		}
 	}
-	b.filePath = filePath
 
+	b.filePath = filePath
+	b.currentDay = time.Now().Format(dayFormat)
+	b.index = defaultIndex
 	b.fileLink = fileLink
+	b.chang = true
 
 	if prefix == "" {
 		b.namePrefix = defaultPrefix
@@ -65,10 +71,9 @@ func NewInciseFile(filePath, fileLink, prefix string, maxSize int64) (*InciseFil
 		b.maxFileSize = maxSize * 1014 * 1024
 	}
 
-	b.currentDay = time.Now().Format(dayFormat)
-	b.index = defaultIndex
-
-	b.chang = true
+	if err = b.createFile(); err != nil {
+		return nil, err
+	}
 
 	return b, nil
 }
@@ -77,26 +82,7 @@ func (b *InciseFileBackend) doIncise() error {
 	b.checkData()
 	b.checkSize()
 	if b.chang {
-		fileName := fmt.Sprintf("%s-%s-%.4d.log", b.namePrefix, b.currentDay, b.index)
-		b.appellation = filepath.Join(b.filePath, fileName)
-		var err error
-		b.fd, err = os.OpenFile(b.appellation, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-		if err != nil {
-			return err
-		}
-
-		if b.fileLink != "" {
-			linkName := filepath.Join(b.filePath, b.fileLink)
-			tmpLinkName := linkName + `_symlink`
-			if err = os.Symlink(fileName, tmpLinkName); err != nil {
-				return err
-			}
-
-			if err = os.Rename(tmpLinkName, linkName); err != nil {
-				return err
-			}
-		}
-		b.chang = false
+		return b.createFile()
 	}
 	return nil
 }
@@ -105,6 +91,8 @@ func (b *InciseFileBackend) checkData() {
 	cDay := time.Now().Format(dayFormat)
 	if cDay != b.currentDay {
 		b.currentDay = cDay
+		//日期变更后，序号重置
+		b.index = defaultIndex
 		b.chang = true
 	}
 }
@@ -123,11 +111,39 @@ func (b *InciseFileBackend) checkSize() {
 
 //Write 文件后端写方法
 func (b *InciseFileBackend) Write(buf []byte) (int, error) {
-	b.doIncise()
+	if err := b.doIncise(); err != nil {
+		return 0, err
+	}
 	return b.fd.Write(buf)
 }
 
 //Close 文件后端关闭
 func (b *InciseFileBackend) Close() error {
 	return b.fd.Close()
+}
+
+//createFile 格式化文件名字
+func (b *InciseFileBackend) createFile() error {
+	fileName := fmt.Sprintf("%s-%s-%.4d%s", b.namePrefix, b.currentDay, b.index, defaultSuffix)
+	b.appellation = filepath.Join(b.filePath, fileName)
+
+	var err error
+	b.fd, err = os.OpenFile(b.appellation, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+
+	if b.fileLink != "" {
+		linkName := filepath.Join(b.filePath, b.fileLink)
+		tmpLinkName := linkName + `_symlink`
+		if err = os.Symlink(fileName, tmpLinkName); err != nil {
+			return err
+		}
+
+		if err = os.Rename(tmpLinkName, linkName); err != nil {
+			return err
+		}
+	}
+	b.chang = false
+	return nil
 }

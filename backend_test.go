@@ -14,3 +14,13 @@ func BenchmarkWrite(b *testing.B) {
 		bb.Write(msg)
 	}
 }
+
+func TestWrite(t *testing.T) {
+	bb, err := NewInciseFile("xlog", "", "", 0)
+	if err != nil {
+		t.Error(err)
+	}
+	msg := []byte("this is a message!!!\n")
+
+	bb.Write(msg)
+}
