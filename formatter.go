@@ -1,8 +1,8 @@
 package zlog
 
 import (
-	"bytes"
 	"fmt"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -29,13 +29,13 @@ func (f *TextFormatter) Format(level Level, msg string) []byte {
 		file = "???"
 		line = 0
 	} else {
-		slash := strings.LastIndex(file, "/")
+		slash := strings.LastIndex(file, string(filepath.Separator))
 		if slash >= 0 {
 			file = file[slash+1:]
 		}
 	}
 
-	buf := &bytes.Buffer{}
+	buf := &strings.Builder{}
 
 	fmt.Fprintf(buf, "%s [%s] %s %d :: ", time.Now().Format(timeFormat), level.String(), file, line)
 
@@ -47,11 +47,14 @@ func (f *TextFormatter) Format(level Level, msg string) []byte {
 
 	fmt.Fprintf(buf, "%s\n", msg)
 
-	return buf.Bytes()
+	return []byte(buf.String())
 }
 
 //WithFields 添加一个map
 func (f *TextFormatter) WithFields(fields Fields) {
+	if len(fields) == 0 {
+		return
+	}
 	for k, v := range fields {
 		f.Data[k] = v
 	}

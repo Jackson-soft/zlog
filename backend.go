@@ -41,7 +41,7 @@ const (
 )
 
 func NewInciseFile(filePath, fileLink, prefix string, maxSize int64) (*InciseFileBackend, error) {
-	if filePath == "" {
+	if len(filePath) == 0 {
 		return nil, errors.New("file path is nil")
 	}
 	b := new(InciseFileBackend)
@@ -133,7 +133,8 @@ func (b *InciseFileBackend) createFile() error {
 		return err
 	}
 
-	if b.fileLink != "" {
+	//如果软链接配置不为空
+	if len(b.fileLink) > 0 {
 		linkName := filepath.Join(b.filePath, b.fileLink)
 		tmpLinkName := linkName + `_symlink`
 		if err = os.Symlink(fileName, tmpLinkName); err != nil {
