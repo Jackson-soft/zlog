@@ -119,22 +119,30 @@ func (b *InciseFileBackend) Write(buf []byte) (int, error) {
 
 //Close 文件后端关闭
 func (b *InciseFileBackend) Close() error {
+	b.fd.Sync()
 	return b.fd.Close()
 }
 
 //createFile 格式化文件名字
 func (b *InciseFileBackend) createFile() error {
 	fileName := fmt.Sprintf("%s-%s-%.4d%s", b.namePrefix, b.currentDay, b.index, defaultSuffix)
-	b.appellation = filepath.Join(b.filePath, fileName)
+	appellation := filepath.Join(b.filePath, fileName)
 
-	// 新打开文件之前先关闭，不然会有文件描述符泄漏
-	b.fd.Close()
-
-	var err error
-	b.fd, err = os.OpenFile(b.appellation, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	fd, err := os.OpenFile(appellation, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
+
+	// 新打开文件之前先关闭，不然会有文件描述符泄漏
+	if b.fd != nil {
+		// flush
+		b.fd.Sync()
+		b.fd.Close()
+		b.fd = nil
+	}
+
+	b.fd = fd
+	b.appellation = appellation
 
 	//如果软链接配置不为空
 	if len(b.fileLink) > 0 {
