@@ -13,10 +13,11 @@ type Level uint8
 const (
 	TraceLevel Level = iota
 	DebugLevel
-	InfoLevel
+	InforLevel
 	WarnLevel
 	ErrorLevel
 	FatalLevel
+	NULLLevel //非法等级
 )
 
 // Convert the Level to a string
@@ -26,17 +27,17 @@ func (level Level) String() string {
 		return "trace"
 	case DebugLevel:
 		return "debug"
-	case InfoLevel:
-		return "info"
+	case InforLevel:
+		return "infor"
 	case WarnLevel:
 		return "warn"
 	case ErrorLevel:
 		return "error"
 	case FatalLevel:
 		return "fatal"
+	default:
+		return ""
 	}
-
-	return ""
 }
 
 // ParseLevel takes a string level and returns the Logrus log level constant.
@@ -50,13 +51,13 @@ func ParseLevel(lvl string) (Level, error) {
 		return ErrorLevel, nil
 	case "warn":
 		return WarnLevel, nil
-	case "info":
-		return InfoLevel, nil
+	case "infor":
+		return InforLevel, nil
 	case "debug":
 		return DebugLevel, nil
 	}
 
-	return DebugLevel, fmt.Errorf("not a valid logrus Level: %q", lvl)
+	return NULLLevel, fmt.Errorf("not a valid logrus Level: %q", lvl)
 }
 
 // ZLog is a log
@@ -64,13 +65,10 @@ type ZLog struct {
 	mutex sync.Mutex
 
 	formatter Formatter
-
-	level  Level
-	buffer chan []byte
+	backends  []Backend
+	buffer    chan []byte
 
 	stop chan bool
-
-	backends []Backend
 }
 
 //NewZLog 创建日志
@@ -78,10 +76,11 @@ func NewZLog(level Level) *ZLog {
 	z := new(ZLog)
 
 	z.formatter = &TextFormatter{
-		Data: make(Fields),
+		strLevel: level.String(),
+		tLevel:   level,
+		data:     make(Fields),
 	}
 
-	z.level = level
 	z.stop = make(chan bool)
 	z.buffer = make(chan []byte, 256)
 
@@ -93,8 +92,8 @@ func NewZLog(level Level) *ZLog {
 }
 
 // SetLevel 设置日志级别
-func (z *ZLog) SetLevel(level Level) {
-	z.level = level
+func (z *ZLog) SetLevel(level string) error {
+	return z.formatter.SetLevel(level)
 }
 
 //SetFormattor 设置格式化前端
@@ -141,8 +140,8 @@ func (z *ZLog) run() {
 func (z *ZLog) output(level Level, msg string) {
 	z.mutex.Lock()
 	defer z.mutex.Unlock()
-	if level >= z.level {
-		buf := z.formatter.Format(level, msg)
+	buf := z.formatter.Format(level, msg)
+	if len(buf) > 0 {
 		z.buffer <- buf
 	}
 }
@@ -164,7 +163,7 @@ func (z *ZLog) Debugf(format string, args ...interface{}) {
 
 // Infof logs a message at level Info on the standard logger.
 func (z *ZLog) Infof(format string, args ...interface{}) {
-	z.output(InfoLevel, fmt.Sprintf(format, args...))
+	z.output(InforLevel, fmt.Sprintf(format, args...))
 }
 
 // Warnf logs a message at level Warn on the standard logger.
@@ -190,7 +189,7 @@ func (z *ZLog) Debugln(args ...interface{}) {
 
 // Infoln logs a message at level Info on the standard logger.
 func (z *ZLog) Infoln(args ...interface{}) {
-	z.output(InfoLevel, fmt.Sprint(args...))
+	z.output(InforLevel, fmt.Sprint(args...))
 }
 
 // Warnln logs a message at level Warn on the standard logger.

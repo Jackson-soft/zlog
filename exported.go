@@ -1,6 +1,6 @@
 package zlog
 
-var std = NewZLog(InfoLevel)
+var std = NewZLog(InforLevel)
 
 func GetInstance() *ZLog {
 	return std
@@ -9,13 +9,9 @@ func GetInstance() *ZLog {
 // SetLevel 设置日志等级
 func SetLevel(lvl string) error {
 	std.mutex.Lock()
-	level, err := ParseLevel(lvl)
-	if err != nil {
-		return err
-	}
-	std.level = level
+	err := std.SetLevel(lvl)
 	std.mutex.Unlock()
-	return nil
+	return err
 }
 
 //SetFormattor 设置格式化器
