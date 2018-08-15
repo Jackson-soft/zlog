@@ -14,7 +14,7 @@ func TestNewZLog(t *testing.T) {
 }
 
 func BenchmarkLoops(t *testing.B) {
-	z := NewZLog(InfoLevel)
+	z := NewZLog(InforLevel)
 	b, err := NewInciseFile("xlog", "xlog.log", "xxlog", 500)
 	if err != nil {
 		t.Error(err)
@@ -31,7 +31,7 @@ func TestZLogLink(t *testing.T) {
 }
 
 func TestZLog(t *testing.T) {
-	z := NewZLog(InfoLevel)
+	z := NewZLog(InforLevel)
 	b, err := NewInciseFile("xlog", "xlog.log", "xxlog", 500)
 	if err != nil {
 		t.Error(err)
