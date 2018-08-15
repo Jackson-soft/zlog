@@ -35,6 +35,12 @@ func SetBackend(be Backend) {
 	std.mutex.Unlock()
 }
 
+func Stop() {
+	std.mutex.Lock()
+	std.Stop()
+	std.mutex.Unlock()
+}
+
 func WithFields(fields Fields) *ZLog {
 	return std.WithFields(fields)
 }
