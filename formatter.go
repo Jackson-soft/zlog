@@ -55,7 +55,7 @@ func (f *TextFormatter) Format(level Level, msg string) []byte {
 		return nil
 	}
 
-	_, file, line, ok := runtime.Caller(3)
+	_, file, line, ok := runtime.Caller(4)
 	if !ok {
 		file = "???"
 		line = 0

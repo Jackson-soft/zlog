@@ -2,6 +2,7 @@ package zlog
 
 var std = NewZLog(InforLevel)
 
+//GetInstance 获取实例
 func GetInstance() *ZLog {
 	return std
 }
@@ -35,12 +36,21 @@ func SetBackend(be Backend) {
 	std.mutex.Unlock()
 }
 
+//Stop 停止
 func Stop() {
 	std.mutex.Lock()
 	std.Stop()
 	std.mutex.Unlock()
 }
 
+//Sync 刷新缓存
+func Sync() {
+	std.mutex.Lock()
+	std.Sync()
+	std.mutex.Unlock()
+}
+
+//WithFields 添加附加数据
 func WithFields(fields Fields) *ZLog {
 	return std.WithFields(fields)
 }

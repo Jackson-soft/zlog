@@ -7,7 +7,7 @@ import (
 	"sync"
 )
 
-// LogLevel 日志等级
+//Level 日志等级
 type Level uint8
 
 const (
@@ -68,7 +68,7 @@ type ZLog struct {
 	backends  []Backend
 	buffer    chan []byte
 
-	stop chan bool
+	operate chan int // 操作标识：0停止，1刷新缓冲
 }
 
 //NewZLog 创建日志
@@ -81,7 +81,7 @@ func NewZLog(level Level) *ZLog {
 		data:     make(Fields),
 	}
 
-	z.stop = make(chan bool)
+	z.operate = make(chan int)
 	z.buffer = make(chan []byte, 256)
 
 	z.backends = []Backend{os.Stdout}
@@ -113,23 +113,33 @@ func (z *ZLog) AddBackend(be Backend) {
 
 //Stop 停止
 func (z *ZLog) Stop() {
-	z.stop <- true
+	z.operate <- 0
+}
+
+//Sync 刷新缓冲
+func (z *ZLog) Sync() {
+	z.operate <- 1
 }
 
 func (z *ZLog) run() {
 	for {
 		select {
 		case buf := <-z.buffer:
-			for _, b := range z.backends {
-				b.Write(buf)
+			for i := range z.backends {
+				z.backends[i].Write(buf)
 			}
-		case stop := <-z.stop:
-			if stop && len(z.buffer) == 0 {
-				for _, b := range z.backends {
-					b.Close()
+		case operate := <-z.operate:
+			if operate == 1 {
+				for i := range z.backends {
+					z.backends[i].Sync()
+				}
+			} else if operate == 0 && len(z.buffer) == 0 {
+				for i := range z.backends {
+					z.backends[i].Sync()
+					z.backends[i].Close()
 				}
 				close(z.buffer)
-				close(z.stop)
+				close(z.operate)
 				return
 			}
 		}
@@ -146,6 +156,7 @@ func (z *ZLog) output(level Level, msg string) {
 	}
 }
 
+//WithFields 添加数据
 func (z *ZLog) WithFields(fields Fields) *ZLog {
 	z.formatter.WithFields(fields)
 	return z

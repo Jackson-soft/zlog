@@ -8,9 +8,10 @@ import (
 	"time"
 )
 
-//Backend 日志输出端
+//Backend 日志输出端接口
 type Backend interface {
 	Write(buf []byte) (int, error)
+	Sync() error
 	Close() error
 }
 
@@ -26,7 +27,7 @@ type InciseFileBackend struct {
 	appellation string // 文件的名称
 	index       int    // 文件序号
 	currentDay  string // 当前日期
-	chang       bool   // 日志文件是否要切割
+	changed     bool   // 日志文件是否要切割
 }
 
 const (
@@ -40,11 +41,11 @@ const (
 	defaultSuffix = ".log"
 )
 
+//NewInciseFile create file backend
 func NewInciseFile(filePath, fileLink, prefix string, maxSize int64) (*InciseFileBackend, error) {
 	if len(filePath) == 0 {
 		return nil, errors.New("file path is nil")
 	}
-	b := new(InciseFileBackend)
 
 	var err error
 	if _, err = os.Stat(filePath); os.IsNotExist(err) {
@@ -53,13 +54,18 @@ func NewInciseFile(filePath, fileLink, prefix string, maxSize int64) (*InciseFil
 		}
 	}
 
+	b := new(InciseFileBackend)
+	if err = b.createFile(); err != nil {
+		return nil, err
+	}
+
 	b.filePath = filePath
 	b.currentDay = time.Now().Format(dayFormat)
 	b.index = defaultIndex
 	b.fileLink = fileLink
-	b.chang = true
+	b.changed = true
 
-	if prefix == "" {
+	if len(prefix) == 0 {
 		b.namePrefix = defaultPrefix
 	} else {
 		b.namePrefix = prefix
@@ -71,17 +77,13 @@ func NewInciseFile(filePath, fileLink, prefix string, maxSize int64) (*InciseFil
 		b.maxFileSize = maxSize * 1014 * 1024
 	}
 
-	if err = b.createFile(); err != nil {
-		return nil, err
-	}
-
 	return b, nil
 }
 
 func (b *InciseFileBackend) doIncise() error {
 	b.checkData()
 	b.checkSize()
-	if b.chang {
+	if b.changed {
 		return b.createFile()
 	}
 	return nil
@@ -93,7 +95,7 @@ func (b *InciseFileBackend) checkData() {
 		b.currentDay = cDay
 		//日期变更后，序号重置
 		b.index = defaultIndex
-		b.chang = true
+		b.changed = true
 	}
 }
 
@@ -105,7 +107,7 @@ func (b *InciseFileBackend) checkSize() {
 
 	if fileInfo.Size() >= b.maxFileSize {
 		b.index++
-		b.chang = true
+		b.changed = true
 	}
 }
 
@@ -117,9 +119,13 @@ func (b *InciseFileBackend) Write(buf []byte) (int, error) {
 	return b.fd.Write(buf)
 }
 
+//Sync 刷新缓存区
+func (b *InciseFileBackend) Sync() error {
+	return b.fd.Sync()
+}
+
 //Close 文件后端关闭
 func (b *InciseFileBackend) Close() error {
-	b.fd.Sync()
 	return b.fd.Close()
 }
 
@@ -156,6 +162,6 @@ func (b *InciseFileBackend) createFile() error {
 			return err
 		}
 	}
-	b.chang = false
+	b.changed = false
 	return nil
 }

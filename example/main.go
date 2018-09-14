@@ -2,20 +2,25 @@ package main
 
 import (
 	"runtime/debug"
-	"zlog"
+	"time"
+
+	"github.com/Jackson-soft/zlog"
 )
 
 func main() {
-	defer func() {
-		if err := recover(); err != nil {
-			zlog.Errorf("%s\n", debug.Stack())
-			zlog.Stop()
-		}
+	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				zlog.Errorf("%s\n", debug.Stack())
+				zlog.Sync()
+			}
+		}()
+		panic("dfdf")
 	}()
+	time.Sleep(1 * time.Second)
 	zlog.Infoln("df")
 	zlog.WithFields(zlog.Fields{"fff": "dff", "vvv": 45.6}).Infoln("dfsdfa")
 
-	panic("dfdf")
 	for {
 	}
 }
