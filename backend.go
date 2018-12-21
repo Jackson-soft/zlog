@@ -55,9 +55,6 @@ func NewInciseFile(filePath, fileLink, prefix string, maxSize int64) (*InciseFil
 	}
 
 	b := new(InciseFileBackend)
-	if err = b.createFile(); err != nil {
-		return nil, err
-	}
 
 	b.filePath = filePath
 	b.currentDay = time.Now().Format(dayFormat)
@@ -75,6 +72,10 @@ func NewInciseFile(filePath, fileLink, prefix string, maxSize int64) (*InciseFil
 		b.maxFileSize = defaultMaxSize
 	} else {
 		b.maxFileSize = maxSize * 1014 * 1024
+	}
+
+	if err = b.createFile(); err != nil {
+		return nil, err
 	}
 
 	return b, nil
