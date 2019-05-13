@@ -68,7 +68,7 @@ func (f *TextFormatter) Format(level Level, msg string) []byte {
 
 	buf := &strings.Builder{}
 
-	fmt.Fprintf(buf, "%s [%s] %s %d :: ", time.Now().Format(timeFormat), level.String(), file, line)
+	fmt.Fprintf(buf, "%s %s %s:%d ", time.Now().Format(timeFormat), level.String(), file, line)
 
 	if len(f.data) > 0 {
 		for k, v := range f.data {

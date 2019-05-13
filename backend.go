@@ -31,7 +31,7 @@ type InciseFileBackend struct {
 }
 
 const (
-	timeFormat = "2006-01-02 15:04:05"
+	timeFormat = "2006-01-02 15:04:05.000"
 	dayFormat  = "20060102"
 
 	defaultPrefix  = "zlog"
