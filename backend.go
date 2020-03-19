@@ -34,10 +34,10 @@ const (
 	timeFormat = "2006-01-02 15:04:05.000"
 	dayFormat  = "20060102"
 
-	defaultPrefix  = "zlog"
 	defaultMaxSize = int64(500 * 1024 * 1024) // 500M
 	defaultIndex   = 1
 
+	defaultPrefix = "zlog"
 	defaultSuffix = ".log"
 )
 
@@ -48,7 +48,7 @@ func NewInciseFile(filePath, fileLink, prefix string, maxSize int64) (*InciseFil
 	}
 
 	var err error
-	if _, err = os.Stat(filePath); os.IsNotExist(err) {
+	if _, err = os.Stat(filePath); errors.Is(err, os.ErrNotExist) {
 		if err = os.Mkdir(filePath, os.ModeDir|os.ModePerm); err != nil {
 			return nil, err
 		}

@@ -20,41 +20,36 @@ const (
 	NULLLevel //非法等级
 )
 
+var (
+	levelMap = map[string]Level{
+		"trace": TraceLevel,
+		"debug": DebugLevel,
+		"infor": InforLevel,
+		"warn":  WarnLevel,
+		"error": ErrorLevel,
+		"fatal": FatalLevel,
+	}
+
+	stringMap = map[Level]string{
+		TraceLevel: "trace",
+		DebugLevel: "debug",
+		InforLevel: "infor",
+		WarnLevel:  "warn",
+		ErrorLevel: "error",
+		FatalLevel: "fatal",
+	}
+)
+
 // Convert the Level to a string
 func (level Level) String() string {
-	switch level {
-	case TraceLevel:
-		return "trace"
-	case DebugLevel:
-		return "debug"
-	case InforLevel:
-		return "infor"
-	case WarnLevel:
-		return "warn"
-	case ErrorLevel:
-		return "error"
-	case FatalLevel:
-		return "fatal"
-	default:
-		return ""
-	}
+	return stringMap[level]
 }
 
 // ParseLevel takes a string level and returns the Logrus log level constant.
 func ParseLevel(lvl string) (Level, error) {
-	switch strings.ToLower(lvl) {
-	case "trace":
-		return TraceLevel, nil
-	case "fatal":
-		return FatalLevel, nil
-	case "error":
-		return ErrorLevel, nil
-	case "warn":
-		return WarnLevel, nil
-	case "infor":
-		return InforLevel, nil
-	case "debug":
-		return DebugLevel, nil
+	lvl = strings.ToLower(lvl)
+	if _, ok := levelMap[lvl]; ok {
+		return levelMap[lvl], nil
 	}
 
 	return NULLLevel, fmt.Errorf("not a valid logrus Level: %q", lvl)
@@ -116,7 +111,7 @@ func (z *ZLog) Stop() {
 	z.operate <- 0
 }
 
-//Sync 刷新缓冲
+//Sync 刷新缓冲
 func (z *ZLog) Sync() {
 	z.operate <- 1
 }
@@ -156,7 +151,7 @@ func (z *ZLog) output(level Level, msg string) {
 	}
 }
 
-//WithFields 添加数据
+//WithFields 添加数据
 func (z *ZLog) WithFields(fields Fields) *ZLog {
 	z.formatter.WithFields(fields)
 	return z

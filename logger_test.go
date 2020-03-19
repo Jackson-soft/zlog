@@ -4,6 +4,14 @@ import (
 	"testing"
 )
 
+func TestLevel(t *testing.T) {
+	lvl, err := ParseLevel("infor")
+	if err != nil {
+		t.Error(err)
+	}
+	t.Log(lvl.String())
+}
+
 func TestNewZLog(t *testing.T) {
 	b, err := NewInciseFile("xlog", "xlog.log", "xxlog", 500)
 	if err != nil {
@@ -24,10 +32,6 @@ func BenchmarkLoops(t *testing.B) {
 	for i := 0; i < t.N; i++ {
 		z.output(WarnLevel, "sdfasdf\n ssfdsdfs \n asdfsd")
 	}
-}
-
-func TestZLogLink(t *testing.T) {
-
 }
 
 func TestZLog(t *testing.T) {
